@@ -1,0 +1,151 @@
+from simulator import move_forward, turn_left, turn_right, reset_map, set_speed, show_animation, test
+# DO NOT MODIFY LINE 1
+# You may import any libraries you want. But you may not import simulator_hidden
+
+import numpy as np
+import time
+
+show_animation(True)
+set_speed(3)          # This line is only meaningful if animations are enabled.
+ 
+#####################################
+#### Implement steps 1 to 3 here ####
+#####################################
+grid_size   = (8, 8)             # Size of the map
+goal        = (6, 6)             # Coordinates of the goal
+orientation = ['N','E','S','W']  # List of orientations
+
+# Hyperparameters: Feel free to change all of these!
+forward=0
+left=1
+right=2
+back=3
+actions = [forward, left, right, back]
+num_epochs = 10
+alpha = 0.2
+gamma = 0.8
+epsilon = 0
+q_table = np.zeros([6*6*4,4])
+
+# Define your reward function
+def reward(x,y,ori,sensor,action):
+	if (x,y)==(5,6) and ((ori == 'S' and action == forward)or(ori == 'E' and action == right)):
+		return 1
+	if (x,y)==(6,5) and ((ori == 'S' and action == left)or(ori == 'E' and action == forward)):
+		return 1
+	if sensor[1]==0 and action == forward:
+		return 0
+	if sensor[0]==0 and action == left:
+		return 0
+	if sensor[2]==0 and action == right:
+		return 0
+	if sensor[0]==1 and sensor[1]==1 and sensor[2]==1 and action == back:
+		return 0
+	else:
+		return -1
+
+for i in range(num_epochs):
+	(x, y), ori, sensor, done = reset_map()
+	available_actions=[]
+	direction=0
+	next_state=0
+	while done==False:
+		print(reward(x, y, ori, sensor, done))
+		if ori =='S':
+			direction==1
+		elif ori =='E':
+			direction==2
+		elif ori == 'N':
+			direction==3
+		else:
+			direction==4
+
+		for i in actions:
+			if reward(x,y,ori,sensor,i)>=0:
+				available_actions.append(i)
+		action = np.random.choice(available_actions)
+
+		if action == 0 and ori =='S':
+			next_state=(6*(x)+y)*direction
+		if action == 0 and ori =='w':
+			next_state=(6*(x-1)+y-1)*direction
+		if action ==0 and ori == 'E':
+			next_state=(6*(x-1)+y+1)*direction
+		if action == 0 and ori == 'N':
+			next_state=(6*(x-2)+y)*direction
+
+		if action == 1 and ori =='S':
+			next_state=(6*(x-1)+y+1)*direction+1
+		if action == 1 and ori =='E':
+			next_state=(6*(x-2)+y)*direction+1
+		if action ==1 and ori == 'N':
+			next_state=(6*(x-1)+y-1)*direction+1
+		if action == 1 and ori == 'W':
+			next_state=(6*(x)+y)
+
+		if action == 2 and ori =='S':
+			next_state=(6*(x-1)+y-1)*4
+		if action == 2 and ori =='E':
+			next_state=(6*(x)+y)*direction-1
+		if action ==2 and ori == 'N':
+			next_state=(6*(x-1)+y+1)*direction-1
+		if action == 2 and ori == 'W':
+			next_state=(6*(x-2)+y)*direction-1
+
+		if action == 3 and ori =='S':
+			next_state=(6*(x-2)+y)*direction+2
+		if action == 3 and ori =='E':
+			next_state=(6*(x-1)+y-1)*direction+2
+		if action == 3 and ori == 'N':
+			next_state=(6*(x)+y)*1
+		if action == 3 and ori == 'W':
+			next_state=(6*(x-1)+y+1)*2
+			
+			
+		q_table[(6*(x-1)+y)*direction][action]=(1-alpha)*q_table[6*(x-1)+y][action]+alpha*(reward(x,y,ori,sensor,action)+gamma*(np.max(q_table[next_state])))
+
+		if action == 0:
+			(x, y), ori, sensor, done = move_forward()
+		if action == 1:
+			turn_left()
+			(x, y), ori, sensor, done = move_forward()
+		if action == 2:
+			turn_right()
+			(x, y), ori, sensor, done = move_forward()
+		if action == 3:
+			turn_left()
+			turn_left()
+			(x, y), ori, sensor, done = move_forward()
+
+	
+
+
+#####################################
+
+np.save("q_table", q_table)
+
+set_speed(3)
+test()
+(x, y), ori, sensor, done = reset_map()
+
+###############################
+#### Implement step 4 here ####
+###############################
+
+###############################
+
+#### If you want to try moving around the map with your keyboard, uncomment the below lines 
+# import pygame
+# set_speed(5)
+# show_animation(True)
+# while True:
+# 	for event in pygame.event.get():
+# 		if event.type == pygame.QUIT:
+# 			exit("Closing...")
+# 		if event.type == pygame.KEYDOWN:
+# 			if event.key == pygame.K_LEFT: print(turn_left())
+# 			if event.key == pygame.K_RIGHT: print(turn_right())
+# 			if event.key == pygame.K_UP: print(move_forward())
+# 			if event.key == pygame.K_t: test()
+# 			if event.key == pygame.K_r: print(reset_map())
+# 			if event.key == pygame.K_q: exit("Closing...")
